@@ -51,7 +51,7 @@ function M.apply()
 	local new_version = semver.bump(current_version, commits)
 
 	-- 5. Generar changelog
-	local new_changelog = changelog.generate(new_version, commits)
+	local new_changelog = changelog.generate(commits, new_version, opts.changelog_path)
 
 	-- 6. Prepend CHANGELOG.md
 	local existing = read_file(opts.changelog_path)
@@ -67,6 +67,20 @@ function M.apply()
 	end
 
 	vim.notify("Release " .. new_version .. " generado", vim.log.levels.INFO)
+end
+
+--- Nueva función: Commit real usando COMMIT_DRAW
+function M.commit_with_draft()
+    local opts = config.options
+    local draft_path = opts and opts.commit_draw_path or ".git/COMMIT_DRAW"
+    -- Ejecuta el commit usando el contenido del draft
+    local result = vim.fn.system({ 'git', 'commit', '-F', draft_path })
+    local code = vim.v.shell_error
+    if code == 0 then
+        vim.notify("Commit realizado correctamente:\n" .. result, vim.log.levels.INFO)
+    else
+        vim.notify("Error al realizar commit:\n" .. result, vim.log.levels.ERROR)
+    end
 end
 
 return M
