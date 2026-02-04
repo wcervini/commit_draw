@@ -1,0 +1,341 @@
+*commit-draw.txt*    Commit Draw Plugin Documentation
+
+==============================================================================
+CONTENTS                                                  *commit-draw-contents*
+
+1. Introduction .................... |commit-draw-intro|
+2. Installation ................... |commit-draw-installation|
+3. Commands ....................... |commit-draw-commands|
+4. Configuration .................. |commit-draw-configuration|
+5. Usage .......................... |commit-draw-usage|
+6. Conventional Commits ........... |commit-draw-commit-types|
+7. Generated Files ................ |commit-draw-files|
+8. Troubleshooting ................ |commit-draw-troubleshooting|
+
+==============================================================================
+1. INTRODUCTION                                                    *commit-draw-intro*
+
+Commit Draw is a Neovim plugin for managing commit drafts and automated changelog
+generation using Conventional Commits format.
+
+FEATURES:
+- Interactive commit addition with Conventional Commits format
+- Automatic semantic versioning based on commit types
+- Automated CHANGELOG.md generation
+- Git integration for direct commit execution
+- Visual draft file editing
+
+==============================================================================
+2. INSTALLATION                                              *commit-draw-installation*
+
+2.1 MANUAL INSTALLATION                                       *commit-draw-manual-install*
+
+Add to your Neovim configuration:
+>
+    vim.opt.rtp:append("~/.config/nvim/path/to/commit-draw")
+    require("commit_draw").setup()
+<
+
+2.2 PACKER INSTALLATION                                       *commit-draw-packer-install*
+
+Using Packer.nvim:
+>
+    use {
+        "wcervini/commit_draw",
+        config = function()
+            require("commit_draw").setup()
+        end
+    }
+<
+
+2.3 LAZY.NVIM INSTALLATION                                   *commit-draw-lazy-install*
+
+Using Lazy.nvim:
+>
+    return {
+        "wcervini/commit_draw",
+        config = function()
+            require("commit_draw").setup()
+        end
+    }
+<
+
+==============================================================================
+3. COMMANDS                                                    *commit-draw-commands*
+
+Commit Draw provides four user commands for managing commit drafts.
+
+3.1 COMMITDRAWADD                                              *CommitDrawAdd*
+
+Add commits interactively to the draft file.
+
+SYNOPSIS:
+    :CommitDrawAdd
+
+DESCRIPTION:
+    Opens an interactive prompt sequence to add a commit entry using Conventional
+    Commits format. The plugin guides you through:
+    - Commit type selection (11 supported types)
+    - Optional scope input
+    - Description input
+    - Optional additional notes
+
+EXAMPLES:
+    :CommitDrawAdd
+    " Follow prompts to add: feat(api): add new authentication endpoint
+
+SEE ALSO:
+    |commit-draw-commit-types|
+
+3.2 COMMITDRAWOPEN                                            *CommitDrawOpen*
+
+Open the commit draft file for manual editing.
+
+SYNOPSIS:
+    :CommitDrawOpen
+
+DESCRIPTION:
+    Opens the commit draft file (.git/COMMIT_DRAFT) in the current buffer for
+    manual editing. This allows you to review, modify, or add commit entries
+    directly.
+
+EXAMPLES:
+    :CommitDrawOpen
+    " Edit the draft file directly
+
+SEE ALSO:
+    |commit-draw-files|
+
+3.3 COMMITDRAWAPPLY                                          *CommitDrawApply*
+
+Apply the commit draft to generate a release.
+
+SYNOPSIS:
+    :CommitDrawApply
+
+DESCRIPTION:
+    Processes the commit draft file to generate a release. This includes:
+    - Parsing and validating all commit entries
+    - Calculating the new semantic version based on commit types
+    - Generating and prepending to CHANGELOG.md
+    - Updating the VERSION file
+    - Optionally clearing the draft file (if auto_clear is enabled)
+
+EXAMPLES:
+    :CommitDrawApply
+    " Generate release with version 1.2.3
+
+SEE ALSO:
+    |commit-draw-files| |commit-draw-commit-types|
+
+3.4 COMMITDRAWCOMMIT                                        *CommitDrawCommit*
+
+Perform a Git commit using the draft content.
+
+SYNOPSIS:
+    :CommitDrawCommit
+
+DESCRIPTION:
+    Executes a Git commit using the content of the commit draft file. This
+    performs the actual Git commit after the draft has been prepared and
+    optionally applied for versioning.
+
+EXAMPLES:
+    :CommitDrawCommit
+    " Commit using draft content to Git
+
+==============================================================================
+4. CONFIGURATION                                          *commit-draw-configuration*
+
+Commit Draw can be configured through the setup function.
+
+4.1 DEFAULT CONFIGURATION                                 *commit-draw-default-config*
+
+Default configuration values:
+>
+    require("commit_draw").setup({
+        commit_draw_path = ".git/COMMIT_DRAFT",   -- Draft file path
+        changelog_path = "CHANGELOG.md",          -- Changelog file path
+        version_file = "VERSION",                 -- Version file path
+        auto_clear = true,                         -- Auto-clear draft after apply
+    })
+<
+
+4.2 CONFIGURATION OPTIONS                                 *commit-draw-config-options*
+
+commit_draw_path~                     (string)     *commit-draw-commit_draw_path*
+    Path to the commit draft file. Default: ".git/COMMIT_DRAFT"
+
+changelog_path~                     (string)     *commit-draw-changelog_path*
+    Path to the changelog file. Default: "CHANGELOG.md"
+
+version_file~                       (string)     *commit-draw-version_file*
+    Path to the version file. Default: "VERSION"
+
+auto_clear~                         (boolean)    *commit-draw-auto_clear*
+    Automatically clear the draft file after applying. Default: true
+
+==============================================================================
+5. USAGE                                                      *commit-draw-usage*
+
+5.1 BASIC WORKFLOW                                        *commit-draw-basic-workflow*
+
+Typical workflow for using Commit Draw:
+
+1. Add commits to draft:
+>
+    :CommitDrawAdd
+<
+
+2. Review and edit draft (optional):
+>
+    :CommitDrawOpen
+<
+
+3. Generate release:
+>
+    :CommitDrawApply
+<
+
+4. Commit to Git:
+>
+    :CommitDrawCommit
+<
+
+5.2 COMPLETE EXAMPLE                                     *commit-draw-complete-example*
+
+Full workflow example:
+>
+    " Add feature commit
+    :CommitDrawAdd
+    " Select: feat, api, "add user management endpoints"
+
+    " Add fix commit
+    :CommitDrawAdd
+    " Select: fix, auth, "fix login timeout issue"
+
+    " Review draft
+    :CommitDrawOpen
+
+    " Generate release
+    :CommitDrawApply
+
+    " Commit to Git
+    :CommitDrawCommit
+<
+
+5.3 CONVENTIONAL COMMITS FORMAT                          *commit-draw-commit-format*
+
+Commit entries follow Conventional Commits format:
+>
+    type[(scope)]: description
+    type![(scope)]: description (breaking change)
+<
+
+Examples:
+- feat(api): add new endpoint
+- fix(auth): resolve token issue !
+- chore: update dependencies
+
+==============================================================================
+6. CONVENTIONAL COMMITS                                *commit-draw-commit-types*
+
+6.1 SUPPORTED COMMIT TYPES                             *commit-draw-supported-types*
+
+Commit Draw supports the following commit types:
+
+Type        Description                           Version Bump
+----        -----------                           ------------
+feat        New feature                           Minor (+0.1.0)
+fix         Bug fix                               Patch (+0.0.1)
+chore       Maintenance tasks                     Patch (+0.0.1)
+docs        Documentation changes                 Patch (+0.0.1)
+style       Code style changes                    Patch (+0.0.1)
+refactor    Code refactoring                      Patch (+0.0.1)
+perf        Performance improvements              Patch (+0.0.1)
+test        Test-related changes                  Patch (+0.0.1)
+build       Build system changes                  Patch (+0.0.1)
+ci          CI/CD changes                         Patch (+0.0.1)
+revert      Revert previous commit                Patch (+0.0.1)
+
+6.2 BREAKING CHANGES                                 *commit-draw-breaking-changes*
+
+Breaking changes are indicated with `!` after the commit type and cause a major
+version bump (+1.0.0).
+
+Examples:
+- feat!(api): remove deprecated endpoint
+- fix!(auth): change authentication flow
+
+==============================================================================
+7. GENERATED FILES                                          *commit-draw-files*
+
+Commit Draw manages several files in your repository.
+
+7.1 COMMIT_DRAFT FILE                                   *commit-draw-draft-file*
+
+Path: .git/COMMIT_DRAFT
+
+Contains commit entries in Conventional Commits format, one per line.
+
+Example content:
+>
+    feat(api): add user registration
+    fix(auth): resolve token expiration
+    chore: update dependencies
+<
+
+7.2 CHANGELOG.MD FILE                                 *commit-draw-changelog-file*
+
+Path: CHANGELOG.md
+
+Generated changelog with version sections. New releases are prepended to the file.
+
+Example content:
+>
+    ## 1.2.3
+    - feat(api): add user registration
+    - fix(auth): resolve token expiration
+<
+
+7.3 VERSION FILE                                       *commit-draw-version-file*
+
+Path: VERSION
+
+Contains the current semantic version number.
+
+Example content:
+>
+    1.2.3
+<
+
+==============================================================================
+8. TROUBLESHOOTING                                    *commit-draw-troubleshooting*
+
+8.1 COMMON ISSUES                                     *commit-draw-common-issues*
+
+"COMMIT_DRAFT está vacío" (COMMIT_DRAFT is empty)
+>   The draft file contains no commit entries. Use |CommitDrawAdd| to add commits.
+
+"No hay commits válidos" (No valid commits found)
+>   The draft file contains invalid commit format. Check format using |commit-draw-commit-format|.
+
+Git commit fails with error
+>   Ensure you're in a Git repository and have write permissions.
+
+8.2 DEBUGGING TIPS                                    *commit-draw-debugging-tips*
+
+- Use |CommitDrawOpen| to inspect the draft file contents
+- Check file permissions on generated files
+- Verify you're in a Git repository
+- Ensure commit entries follow Conventional Commits format
+
+8.3 KNOWN LIMITATIONS                                *commit-draw-known-limitations*
+
+- Requires Git repository to function
+- Commit validation follows strict Conventional Commits format
+- Version calculation is based solely on commit types
+- No support for commit body/multiple lines per entry
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:

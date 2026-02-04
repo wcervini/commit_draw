@@ -1,4 +1,4 @@
-Copyright (c) [2026] [Walter Cervini]100dd
+Copyright (c) 2026 Walter Cervini <wcervini@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
