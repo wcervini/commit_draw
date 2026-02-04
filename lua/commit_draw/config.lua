@@ -1,7 +1,7 @@
 local M = {}
 
 M.defaults = {
-	commit_draw_path = ".git/COMMIT_DRAW",
+	commit_draw_path = ".git/COMMIT_DRAFT",
 	changelog_path = "CHANGELOG.md",
 	version_file = "VERSION",
 	auto_clear = true,

@@ -4,21 +4,18 @@ local M = {}
 function M.generate(commits, version, changelog_path)
 	local lines = {}
 	table.insert(lines, "## " .. version)
-	-- por ahora solo imprimimos para pruebas
 
-	for _, c in ipairs(commits) do
+	for i, c in ipairs(commits) do
 		table.insert(lines, "- " .. (c.type or "misc") .. ": " .. (c.description or ""))
 	end
 
-	local f, err = io.open(changelog_path, "a")
-	if not f then
-		print("Error al abrir el archivo de changelog: " .. (err or "error desconocido"))
-		return lines
+	local f = io.open(changelog_path, "a")
+	if f then
+		for _, l in ipairs(lines) do
+			f:write(l .. "\n")
+		end
+		f:close()
 	end
-	for _, l in ipairs(lines) do
-		f:write(l .. "\n")
-	end
-	f:close()
 
 	return lines -- 🔹 Muy importante
 end

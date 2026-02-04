@@ -29,10 +29,10 @@ end
 function M.apply()
 	local opts = config.options
 
-	-- 1. Leer COMMIT_DRAW
+	-- 1. Leer COMMIT_DRAFT
 	local lines = read_file(opts.commit_draw_path)
 	if #lines == 0 then
-		vim.notify("COMMIT_DRAW está vacío", vim.log.levels.WARN)
+		vim.notify("COMMIT_DRAFT está vacío", vim.log.levels.WARN)
 		return
 	end
 
@@ -61,7 +61,7 @@ function M.apply()
 	-- 7. Guardar versión
 	write_file(opts.version_file, { new_version })
 
-	-- 8. Limpiar COMMIT_DRAW
+	-- 8. Limpiar COMMIT_DRAFT
 	if opts.auto_clear then
 		write_file(opts.commit_draw_path, {})
 	end
@@ -69,18 +69,78 @@ function M.apply()
 	vim.notify("Release " .. new_version .. " generado", vim.log.levels.INFO)
 end
 
---- Nueva función: Commit real usando COMMIT_DRAW
+--- Nueva función: Commit real usando COMMIT_DRAFT
 function M.commit_with_draft()
-    local opts = config.options
-    local draft_path = opts and opts.commit_draw_path or ".git/COMMIT_DRAW"
-    -- Ejecuta el commit usando el contenido del draft
-    local result = vim.fn.system({ 'git', 'commit', '-F', draft_path })
-    local code = vim.v.shell_error
-    if code == 0 then
-        vim.notify("Commit realizado correctamente:\n" .. result, vim.log.levels.INFO)
-    else
-        vim.notify("Error al realizar commit:\n" .. result, vim.log.levels.ERROR)
-    end
+	local opts = config.options
+	local draft_path = opts.commit_draw_path
+	-- Ejecuta el commit usando el contenido del draft
+	local result = vim.fn.system({ "git", "commit", "-F", draft_path })
+	local code = vim.v.shell_error
+	if code == 0 then
+		vim.notify("Commit realizado correctamente:\n" .. result, vim.log.levels.INFO)
+	else
+		vim.notify("Error al realizar commit:\n" .. result, vim.log.levels.ERROR)
+	end
+end
+
+-- Añade una entrada Conventional Commit mediante diálogo interactivo
+function M.add_interactive()
+	local opts = config.options
+	local draft_path = opts.commit_draw_path
+	local commit_types =
+		{ "feat", "fix", "chore", "docs", "style", "refactor", "perf", "test", "build", "ci", "revert" }
+
+	vim.ui.select(commit_types, { prompt = "Tipo de commit" }, function(commit_type)
+		if not commit_type then
+			vim.notify("Commit cancelado (sin tipo)", vim.log.levels.WARN)
+			return
+		end
+
+		vim.ui.input({ prompt = "Scope (opcional)" }, function(scope)
+			if scope == nil then
+				scope = ""
+			end
+
+			vim.ui.input({ prompt = "Descripción (opcional)", default = "" }, function(description)
+				if description == nil then
+					description = ""
+				end
+
+				vim.ui.input({ prompt = "Notas (opcional)" }, function(notes)
+					if notes == nil then
+						notes = ""
+					end
+
+					-- Formato del commit
+					local line = commit_type
+					if scope and scope ~= "" then
+						line = string.format("%s(%s)", commit_type, scope)
+					end
+					if description and description ~= "" then
+						line = line .. ": " .. description
+					end
+					if notes and notes ~= "" then
+						line = line .. "\n" .. notes
+					end
+
+					-- Si solo tenemos el tipo sin scope ni descripción, añadir dos puntos
+					if line == commit_type then
+						line = line .. ":"
+					end
+
+					-- Append a COMMIT_DRAFT
+					local f = io.open(draft_path, "a+")
+					if not f then
+						vim.notify("No se pudo abrir " .. draft_path, vim.log.levels.ERROR)
+						return
+					end
+					f:write(line .. "\n")
+					f:close()
+					vim.notify("Commit añadido al draft", vim.log.levels.INFO)
+				end)
+			end)
+		end)
+	end)
 end
 
 return M
